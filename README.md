@@ -37,16 +37,6 @@ I chose a 400-character chunk size with 0 overlap because the campus_life docume
 ```
 
 ## Sample Chunks
-
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
-
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
-
 **Chunk 1** — source: `admin_add_drop_deadline.txt` — produced by: `split_documents`
 
 ```
@@ -120,26 +110,47 @@ The bad: known damp problem on the ground floor; two rooms were taken offline in
      visible. Milestone 4. -->
 
 **Question:**
+When does dropping a course put a W on your transcript?
 
 **Answer:**
 
 ```
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.2356     admin_add_drop_deadline.txt      On the add/drop deadline  You can add a course throu...
+2   0.4633     admin_withdrawal_deadline.txt    On the withdrawal deadline  Withdrawal is a differen...
+3   0.4998     admin_transcript_requests.txt    On the transcript requests  Official transcripts cos...
+4   0.5670     admin_pass_fail_option.txt       On the pass/fail option  Any course outside your maj...
+5   0.6092     admin_grade_appeals.txt          On the grade appeals  A grade appeal starts with the...
+
+Gate: best distance 0.236 is under the 0.6 cutoff
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
 ```
 
 **My relevance cutoff:**
+The five in-scope questions had best distances between **0.2036 and 0.2916**. The five out-of-scope questions had best distances between **0.8246 and 0.9340**. This leaves a large gap between the two groups: the highest in-scope distance was **0.2916**, while the lowest out-of-scope distance was **0.8246**.
 
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
-
+Therefore, I placed the cutoff at **0.6**, which falls between the two groups. With this cutoff, all five in-scope questions passed the relevance gate, while all five out-of-scope questions were rejected. I kept 0.6 rather than setting the cutoff closer to either group because it provides room for some variation in retrieval distances while still separating the questions the corpus covers from clearly unrelated questions.
+```
 | Question | In corpus? | Best distance |
-|---|---|---|
-|  |  |  |
+|---|---|---:|
+| When does dropping a course put a W on your transcript? | Yes | 0.2356 |
+| How does the housing lottery determine priority for juniors and seniors? | Yes | 0.2036 |
+| How many times can you change your meal plan tier, and when is the deadline? | Yes | 0.2377 |
+| What happens to unused dining dollars at the end of the academic year? | Yes | 0.2916 |
+| How much does an official electronic transcript cost? | Yes | 0.2486 |
+| What is the capital of Mongolia? | No | 0.8246 |
+| How do I change the oil in a diesel engine? | No | 0.9340 |
+| Who won the 1994 World Cup? | No | 0.8859 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8442 |
+| How do I write a for loop in Rust? | No | 0.8960 |
+
+```
+
 
 ## How I Used AI
 
