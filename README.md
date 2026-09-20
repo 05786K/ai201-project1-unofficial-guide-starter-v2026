@@ -21,20 +21,14 @@
 # Unit 1
 
 ## What This Does
-
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+This project is a RAG application that uses the `campus_life` corpus to answer questions about campus policies, housing, courses, dining, and student services. It retrieves relevant document chunks and uses them to generate an answer. The system can answer questions when the information is covered by the corpus and refuses questions that are not sufficiently supported by the documents.
 
 ## Chunking Strategy
+I split the `campus_life` documents at paragraph boundaries with a **400-character maximum** and **no overlap**. I kept the document title in each chunk so the chunk has enough context to stand on its own.
 
-**Chunk size:**
-**Overlap:**
-```
+**Chunk size:** and **Overlap:**
 I chose a 400-character chunk size with 0 overlap because the campus_life documents I read in Milestone 1 are mostly short, focused posts rather than long guides. The baseline run showed an average document length of about 317 characters, with the longest at 549 characters, and many documents already formed a complete thought without needing to be split. However, some documents contain multiple paragraphs with separate facts, so I wanted to split those at paragraph boundaries rather than cutting through sentences. I also noticed that character-based overlap could cut words across chunk boundaries, so I removed overlap for this strategy. I kept the document title in each chunk so that a retrieved chunk still has enough context to identify what it is about.
-```
+
 
 ## Sample Chunks
 **Chunk 1** — source: `admin_add_drop_deadline.txt` — produced by: `split_documents`
@@ -108,6 +102,21 @@ The bad: known damp problem on the ground floor; two rooms were taken offline in
 
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
+**Question:**
+When does dropping a course put a W on your transcript?
+
+**Answer:**
+```
+(best distance 0.236, cutoff 0.6)
+
+Dropping a course puts a W on your transcript after week two (through the end of week six). 
+
+Source: admin_add_drop_deadline.txt
+
+Sources retrieved: admin_add_drop_deadline.txt, admin_grade_appeals.txt, admin_pass_fail_option.txt, admin_transcript_requests.txt, admin_withdrawal_deadline.txt
+
+1 model calls this session, 529 tokens (495 in, 34 out)
+```
 
 **Question:**
 When does dropping a course put a W on your transcript?
@@ -153,19 +162,17 @@ Therefore, I placed the cutoff at **0.6**, which falls between the two groups. W
 
 
 ## How I Used AI
-
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
-
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
+Two specific moments I used Claude:
 
 **1.**
+I asked Claude for help deciding how to chunk the `campus_life` documents. Claude suggested I use a fixed character size with character-based overlap. After looking at the actual documents and testing the chunker, I noticed that some documents were already short and complete, while longer documents contained separate facts in different paragraphs. I also found that character-based overlap could split a word across a chunk boundary, such as turning `"Expect"` into `"pect"`. I changed the approach to split on paragraph boundaries instead of character positions. 
+
 
 **2.**
+I gave Claude my five in-scope best distances (0.2036–0.2916) and five out-of-scope best distances (0.8246–0.9340) and asked where it would put the relevance cutoff and what I might get wrong at that number. It said the gap was wide enough that, for these ten questions, roughly 0.35 to 0.75 would separate them correctly. I kept the cutoff at 0.6 because it sits roughly in the middle of the gap and also matches the starter's reasonable default range.
+
+Claude also pointed out a limitation in my test set. My five out-of-scope questions were clearly unrelated to campus life, so they produced very high distances. A more realistic failure case would be a question that shares campus-life vocabulary but asks about information that is not actually covered by the corpus, such as asking whether the school has a pool or asking about a dorm that is not mentioned in the documents. Those questions could potentially retrieve a superficially similar chunk and fall below the 0.6 cutoff.
+
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
