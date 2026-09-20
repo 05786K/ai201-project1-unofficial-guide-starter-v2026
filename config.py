@@ -24,11 +24,12 @@ CORPUS = os.getenv("AI201_CORPUS", "campus_life")
 
 
 # ─── Chunking (Milestone 3) ──────────────────────────────────────────────────
-# These are deliberately plain, generic numbers. Milestone 3 is where you
-# replace them with numbers that fit the documents you actually read.
+# Sized for campus_life: docs run 179-550 chars (median 306), so 800 never
+# split anything. 400 lets single-paragraph docs (the majority) stay whole
+# while letting multi-paragraph docs split at their natural paragraph breaks.
 
-CHUNK_SIZE = 800        # characters per chunk
-CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
+CHUNK_SIZE = 400        # soft cap on characters per chunk
+CHUNK_OVERLAP = 120     # only used by fallback_split's fixed-window chunking
 
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────

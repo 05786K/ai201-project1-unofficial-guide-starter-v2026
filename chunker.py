@@ -80,24 +80,91 @@ def fallback_split(
     return chunks
 
 
+# Paragraphs shorter than this carry no answerable content on their own (a
+# title line, mostly), so they get merged into a neighbour instead of shipping
+# as a standalone chunk.
+MIN_PARAGRAPH_CHARS = 30
+
+
+def _merge_short_paragraphs(paragraphs: list[str]) -> list[str]:
+    """Fold any paragraph under MIN_PARAGRAPH_CHARS into the one before it."""
+    merged: list[str] = []
+    for para in paragraphs:
+        if merged and len(para) < MIN_PARAGRAPH_CHARS:
+            merged[-1] = f"{merged[-1]}\n\n{para}"  # glue it onto the previous paragraph
+        else:
+            merged.append(para)
+    return merged
+
+
+def _split_one_document(doc: Document) -> list[Chunk]:
+    """Group a single document's paragraphs into title-anchored chunks."""
+    paragraphs = [p.strip() for p in doc.text.split("\n\n") if p.strip()]
+    if not paragraphs:
+        return []
+
+    paragraphs = _merge_short_paragraphs(paragraphs)
+    title, *body = paragraphs  # every campus_life doc opens with a one-line title
+
+    if not body:
+        # Nothing but a title (or a single paragraph) — one thought, one chunk.
+        return [
+            Chunk(text=title, source=doc.source, index=0, produced_by="chunker.py::split_documents")
+        ]
+
+    ceiling = config.CHUNK_SIZE  # soft cap on how much a chunk should hold
+
+    groups: list[list[str]] = []
+    current: list[str] = []
+    current_len = len(title)     # the title gets repeated in every chunk, so count it upfront
+
+    for para in body:
+        added_len = len(para) + 2  # +2 accounts for the blank line that will join it
+        if current and current_len + added_len > ceiling:
+            groups.append(current)     # this group is full, start a fresh one
+            current, current_len = [], len(title)
+        current.append(para)
+        current_len += added_len
+    if current:
+        groups.append(current)  # don't drop the last, possibly under-full, group
+
+    # No character-overlap here on purpose: every split falls on a real
+    # paragraph break already, so there's no arbitrary cut to bridge, and
+    # slicing a fixed number of characters off a paragraph risks cutting a
+    # word in half. The repeated title is what keeps chunks 1..N legible on
+    # their own.
+    chunks: list[Chunk] = []
+    for i, group in enumerate(groups):
+        chunks.append(
+            Chunk(
+                text="\n\n".join([title, *group]),
+                source=doc.source,
+                index=i,
+                produced_by="chunker.py::split_documents",
+            )
+        )
+
+    return chunks
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Split documents into chunks, respecting paragraph boundaries.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
-
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
-
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    Built for campus_life: every document opens with a one-line title
+    paragraph followed by one or more body paragraphs. A title alone is never
+    useful, so it's folded into whichever body paragraph follows it instead of
+    becoming its own chunk. The remaining body paragraphs are then grouped
+    into chunks up to CHUNK_SIZE characters, so a document with one short
+    thought stays a single chunk while one bundling several distinct facts
+    (e.g. a dorm review's "good" / "bad" / "logistics" paragraphs) splits into
+    separately retrievable pieces. Every chunk repeats the title so it still
+    reads as "about X" on its own.
     """
-    return fallback_split(documents)
+    chunks: list[Chunk] = []
+    for doc in documents:
+        chunks.extend(_split_one_document(doc))  # each document is chunked independently
+    return chunks
+
 
 
 def describe(chunks: list[Chunk]) -> str:
