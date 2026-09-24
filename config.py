@@ -41,10 +41,12 @@ TOP_K = 5               # how many chunks to pull back per question
 #
 # LOWER IS BETTER: 0.3 is a close match, 0.9 is unrelated.
 #
-# 0.6 is a reasonable starting point, not a right answer. Milestone 4 has you
-# measure your own two groups of distances and put the cutoff in the gap.
-# Most corpora land somewhere between 0.45 and 0.75.
-THRESHOLD = 0.6
+# Lowered from 0.6 in unit 2: my 5 in-scope questions topped out at 0.2916,
+# but several near-topic-but-uncovered questions (a dorm not in the corpus,
+# "is there a gym/pool") scored 0.50-0.59 and slipped under 0.6. 0.45 sits
+# above every question that should pass (max 0.35) and below every one that
+# should fail (min 0.50).
+THRESHOLD = 0.45
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────

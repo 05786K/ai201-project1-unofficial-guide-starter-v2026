@@ -382,9 +382,7 @@ For juniors and seniors, the housing lottery orders participants by accumulated 
      low, and which one you'd tighten and to what.
 
      Milestone 3. -->
-## Milestone 3 — Diagnose Every Miss
-
-Missed nothing — all five criteria were MET. But a perfect result can also mean some targets were too easy to fail. Criterions I would tighten:
+Missed nothing — all five criteria were MET. But a perfect result can also mean some targets were too easy to fail. Criterias I would tighten:
 
 **Criterion 4** is the first target I'd tighten. The chunker caps chunks at 400 characters, so the 150–500 range is mostly guaranteed by the implementation. I'd replace it with a test tied to an actual failure mode, such as requiring at least 4 of 5 sampled chunks to include the document title, or requiring no sampled chunk to be under 100 characters.
 
@@ -396,32 +394,52 @@ Missed nothing — all five criteria were MET. But a perfect result can also mea
 
 **What I changed:**
 
+Lowered `THRESHOLD` in `config.py` from 0.6 to 0.45.
+
 **Why I picked it:**
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+My criterion 3 diagnosis said the out-of-scope test set was too easy — all five questions (Mongolia's capital, diesel oil, the World Cup, ibuprofen, Rust) were maximally unrelated to campus life, so 5/5 didn't prove the gate would catch a harder case. I tested that directly with four questions that share campus vocabulary without being covered (a dorm not in the corpus, "is there a gym/pool," "wifi password," "shuttle to the airport"), and found real best distances of 0.50-0.59 — all under the old 0.6 cutoff. The system still refused them (`app.py ask` on two of them returned "I don't have enough information"), but only because the model's own grounding instruction caught it, not because the gate did — the same kind of prompted-not-enforced behavior I'd already flagged for criterion 2. 0.45 sits above every question that should pass (my 5 in-scope questions top out at 0.2916; a fifth near-miss question I tested that's genuinely answerable, about withdrawing versus dropping, scored 0.35) and below every one that should fail (the four new near-misses at 0.50-0.59, and the original out-of-scope set at 0.82+).
+
+Produced by: `run_eval.py::main` and `run_eval.py::check_out_of_scope`, corpus `campus_life`, cutoff 0.45. Full output in `results/run_2026-09-23_2253_after.md`.
 
 ### Run Log — After
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
-
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunk Size | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. The cited source actually supports the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+Run 1's 4/5 on criterion 1 is a real wrinkle, but not one caused by this
+change: the retrieved chunk for that question (`admin_add_drop_deadline.txt`,
+distance 0.2356, unchanged across all three runs) always contained the
+answer — the automated check failed it because that one generation happened
+to say "if the drop occurs after week two" without repeating "week six,"
+which is a phrasing choice, not a retrieval miss. It still named and was
+supported by the correct source. I'm reporting it rather than
+re-running until it disappears.
 
 **Did it help?**
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+Yes, on the thing I actually targeted. Before the change, four near-miss
+questions I constructed from the criterion 3 diagnosis passed the gate at
+0.50-0.59 and only got refused because the model policed itself; after
+lowering the threshold to 0.45, the gate itself refuses all four:
 
-     Milestone 4. -->
+```
+What's it like living in Dunmore House?         best distance 0.503  ->  over 0.45, refused
+Does the campus have a gym or swimming pool?    best distance 0.581  ->  over 0.45, refused
+What's the wifi password for the library?       best distance 0.591  ->  over 0.45, refused
+Is there a shuttle bus to the airport?          best distance 0.583  ->  over 0.45, refused
+```
+
+None of the original criteria regressed: the 5 in-scope questions and 5
+out-of-scope questions score exactly as before (retrieval didn't change,
+only the cutoff did) and all five criteria are still MET. The one thing that
+moved that I didn't target — criterion 1's run 1 — is generation variance
+unrelated to the threshold, not something this change caused or fixed.
 
 ## What's Still Broken
 
