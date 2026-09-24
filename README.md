@@ -198,18 +198,153 @@ Claude also pointed out a limitation in my test set. My five out-of-scope questi
      the same number goes in all three run columns. That's correct, not lazy.
 
      Milestone 1. -->
+```
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunks contain the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunk Size | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. The cited source actually supports the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+```
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
      Name the file and function that produced it. -->
+
+## Real output
+
+Organized per criterion, as the run log asks for — pasted verbatim from
+`results/run_2026-09-23_1644_before.md`.
+
+### Criterion 1 — Retrieved chunks contain the answer
+
+Produced by: `run_eval.py::main` (retrieval: `store.py::search`, chunks from `chunker.py::split_documents`)
+
+```
+When does dropping a course put a W on your transcript? — run 1
+Best distance: 0.2356 (passed the gate)
+Sources retrieved: admin_add_drop_deadline.txt, admin_grade_appeals.txt, admin_pass_fail_option.txt, admin_transcript_requests.txt, admin_withdrawal_deadline.txt
+
+Dropping a course puts a W on your transcript if it is done after week two, and dropping can be done through the end of week six.
+Source: admin_add_drop_deadline.txt
+```
+
+```
+How does the housing lottery determine priority for juniors and seniors? — run 1
+Best distance: 0.2036 (passed the gate)
+Sources retrieved: admin_grade_appeals.txt, admin_housing_lottery.txt, advising_registration.txt, course_stat_150_exams.txt, housing_tamsin_court.txt
+
+For juniors and seniors, the housing lottery orders participants by accumulated credit hours first, with a random tie-break used only if there is a tie (admin_housing_lottery.txt).
+```
+
+```
+How many times can you change your meal plan tier, and when is the deadline? — run 1
+Best distance: 0.2377 (passed the gate)
+Sources retrieved: admin_meal_plan_changes.txt, dining_kestrel_commons.txt, dining_kestrel_commons_followup.txt, dining_north_kitchen_followup.txt, dining_verrill_street_grill_followup.txt
+
+You can change your meal plan tier once, and the deadline is within the first ten days of the semester (admin_meal_plan_changes.txt).
+```
+
+```
+What happens to unused dining dollars at the end of the academic year? — run 1
+Best distance: 0.2916 (passed the gate)
+Sources retrieved: admin_dining_dollars.txt, admin_meal_plan_changes.txt, admin_printing_quota.txt, admin_wifi_and_accounts.txt, money_jobs.txt
+
+Whatever dining dollars are left in May disappears and does not roll over to the following autumn semester.
+Source: admin_dining_dollars.txt
+```
+
+```
+How much does an official electronic transcript cost? — run 1
+Best distance: 0.2486 (passed the gate)
+Sources retrieved: admin_add_drop_deadline.txt, admin_printing_quota.txt, admin_transcript_requests.txt, course_biol_160_workload.txt, money_textbooks.txt
+
+An official transcript costs $8.
+Source: admin_transcript_requests.txt
+```
+
+5 of 5 test questions had the answer in the retrieved chunks, across all 3 runs.
+
+### Criterion 2 — Every answer names a source
+
+Produced by: `run_eval.py::main` (source line comes from `generate.py`)
+
+```
+Dropping a course puts a W on your transcript if it is done after week two, and dropping can be done through the end of week six.
+Source: admin_add_drop_deadline.txt
+```
+
+```
+Juniors and seniors are ordered by accumulated credit hours first, with a random tie-break used if needed (*admin_housing_lottery.txt*).
+```
+
+```
+You can change your meal plan tier once, and the deadline is within the first ten days of the semester (admin_meal_plan_changes.txt).
+```
+
+```
+Whatever dining dollars are left in May disappears and do not roll over from the spring semester to the following autumn (*admin_dining_dollars.txt*).
+```
+
+```
+An official electronic transcript costs $8, according to admin_transcript_requests.txt.
+```
+
+5 of 5 answers named at least one source — either as an explicit `Source:` line or an inline citation — across all 3 runs.
+
+### Criterion 3 — The relevance gate stops out-of-corpus questions
+
+Produced by: `run_eval.py::check_out_of_scope`, cutoff 0.6
+
+```
+| Out-of-scope question                                        | Best distance | Gate    |
+|---------------------------------------------------------------|---------------|---------|
+| What is the capital of Mongolia?                               | 0.825         | refused |
+| How do I change the oil in a diesel engine?                    | 0.934         | refused |
+| Who won the 1994 World Cup?                                    | 0.886         | refused |
+| What is the recommended dosage of ibuprofen for a headache?    | 0.844         | refused |
+| How do I write a for loop in Rust?                             | 0.896         | refused |
+```
+
+5 of 5 refused. This check is deterministic (retrieval + a fixed threshold comparison), so it's measured once rather than three times — the same 5/5 applies to all three run columns.
+
+### Criterion 4 — Chunk Size
+
+Produced by: `chunker.py::split_documents`, sampled via `python app.py chunks`
+
+This criterion isn't something `run_eval.py` measures — it tests questions and the relevance gate, not chunk sampling. The real evidence is the Sample Chunks section above; measuring those same 5 pasted chunks:
+
+```
+Chunk 1  admin_add_drop_deadline.txt#0          300 characters
+Chunk 2  course_cs_210.txt#0                    319 characters
+Chunk 3  course_math_220_workload.txt#0         260 characters
+Chunk 4  dining_the_ridgeway_cafe_followup.txt#0  359 characters
+Chunk 5  housing_morrow_house.txt#0             340 characters
+```
+
+5 of 5 sampled chunks fall within the 150-500 character target. Since chunking is deterministic, this doesn't change between runs either.
+
+### Criterion 5 — The cited source actually supports the answer
+
+Produced by: `run_eval.py::main`
+
+```
+How much does an official electronic transcript cost? — run 1
+An official transcript costs $8.
+Source: admin_transcript_requests.txt
+```
+`admin_transcript_requests.txt` is the document that actually states the $8 fee.
+
+```
+How does the housing lottery determine priority for juniors and seniors? — run 1
+For juniors and seniors, the housing lottery orders participants by accumulated credit hours first, with a random tie-break used only if there is a tie (admin_housing_lottery.txt).
+```
+`admin_housing_lottery.txt` is the document that actually describes this ordering rule.
+
+5 of 5 named sources matched the document that actually contained the cited fact, across all 3 runs.
 
 ## Verdicts
 
