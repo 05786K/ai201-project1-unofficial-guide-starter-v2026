@@ -162,7 +162,7 @@ Therefore, I placed the cutoff at **0.6**, which falls between the two groups. W
 
 
 ## How I Used AI
-Two specific moments I used Claude:
+Three specific moments I used Claude:
 
 **1.**
 I asked Claude for help deciding how to chunk the `campus_life` documents. Claude suggested I use a fixed character size with character-based overlap. After looking at the actual documents and testing the chunker, I noticed that some documents were already short and complete, while longer documents contained separate facts in different paragraphs. I also found that character-based overlap could split a word across a chunk boundary, such as turning `"Expect"` into `"pect"`. I changed the approach to split on paragraph boundaries instead of character positions. 
@@ -172,6 +172,18 @@ I asked Claude for help deciding how to chunk the `campus_life` documents. Claud
 I gave Claude my five in-scope best distances (0.2036–0.2916) and five out-of-scope best distances (0.8246–0.9340) and asked where it would put the relevance cutoff and what I might get wrong at that number. It said the gap was wide enough that, for these ten questions, roughly 0.35 to 0.75 would separate them correctly. I kept the cutoff at 0.6 because it sits roughly in the middle of the gap and also matches the starter's reasonable default range.
 
 Claude also pointed out a limitation in my test set. My five out-of-scope questions were clearly unrelated to campus life, so they produced very high distances. A more realistic failure case would be a question that shares campus-life vocabulary but asks about information that is not actually covered by the corpus, such as asking whether the school has a pool or asking about a dorm that is not mentioned in the documents. Those questions could potentially retrieve a superficially similar chunk and fall below the 0.6 cutoff.
+
+**3.**
+For Unit 2, I had Claude challenge each MET verdict instead of taking the
+perfect score at face value. It found that criterion 2 was not actually
+enforced by code and that criterion 3 used overly easy out-of-scope questions.
+
+I then tested realistic near-miss questions. Three scored 0.50–0.59 and passed
+the 0.6 gate, showing that the gate was too permissive for borderline cases.
+That led me to lower `THRESHOLD` to `0.45`.
+
+I also dropped my initial hybrid-search idea after testing a near-miss where
+the keyword "drop" still pointed to the wrong document.
 
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
@@ -382,7 +394,7 @@ For juniors and seniors, the housing lottery orders participants by accumulated 
      low, and which one you'd tighten and to what.
 
      Milestone 3. -->
-Missed nothing — all five criteria were MET. But a perfect result can also mean some targets were too easy to fail. Criterias I would tighten:
+Missed nothing — all five criteria were MET. But a perfect result can also mean some targets were too easy to fail. Criteria I would tighten:
 
 **Criterion 4** is the first target I'd tighten. The chunker caps chunks at 400 characters, so the 150–500 range is mostly guaranteed by the implementation. I'd replace it with a test tied to an actual failure mode, such as requiring at least 4 of 5 sampled chunks to include the document title, or requiring no sampled chunk to be under 100 characters.
 
@@ -451,9 +463,20 @@ unrelated to the threshold, not something this change caused or fixed.
 
      Milestone 5. -->
 
+No criterion is currently MISSED, but the fix did not address everything found in the diagnosis.
+
+- **The near-miss ranking issue is still there.** `admin_add_drop_deadline.txt` still outranks `admin_withdrawal_deadline.txt` for a week-eight scenario (0.35 vs. 0.48). The answer still comes out correctly because `TOP_K=5` gives the model other relevant context. Threshold tuning does not change the ranking, so this was outside the scope of my one-change fix.
+
+- **Source naming is still prompted, not enforced.** Criterion 2 passes because the model follows the grounding instruction, not because the code guarantees a citation. It has not failed in any run, so I did not add another fix without evidence that it is actually broken.
+
+I stopped after one change on purpose. Fixing either of these would have made it harder to tell which change affected the results.
+
 ## What I'd Do Differently
 
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
+- **Criterion 4:** I'd test something that could actually fail, such as whether the document title survives every split, instead of using a character range that the 400-character cap almost guarantees.
 
-     Milestone 5. -->
+- **Criterion 5:** I'd test it against near-miss questions, such as add/drop versus withdrawal, instead of reusing the same easy questions as Criterion 1.
+
+More broadly, I'd pick a different overall question set, not just different targets. All five original questions were the easiest version of their topic — a clean top-1 match with a wide margin (0.20-0.29 vs. 0.46+ for the next closest document). That's why everything looked perfect until I went looking for harder cases myself. A better set would include at least one near-miss question like this from the start, instead of only after the numbers already looked flawless.
+
+- **Criterion 3:** I'd include at least one question that uses campus vocabulary but is not covered by the corpus. That would test the relevance boundary much better than five obviously unrelated questions.
