@@ -382,6 +382,15 @@ For juniors and seniors, the housing lottery orders participants by accumulated 
      low, and which one you'd tighten and to what.
 
      Milestone 3. -->
+## Milestone 3 — Diagnose Every Miss
+
+Missed nothing — all five criteria were MET. But a perfect result can also mean some targets were too easy to fail. Criterions I would tighten:
+
+**Criterion 4** is the first target I'd tighten. The chunker caps chunks at 400 characters, so the 150–500 range is mostly guaranteed by the implementation. I'd replace it with a test tied to an actual failure mode, such as requiring at least 4 of 5 sampled chunks to include the document title, or requiring no sampled chunk to be under 100 characters.
+
+**Criterion 3** is also weaker than its 5/5 result suggests. All five out-of-scope questions were obviously unrelated to campus life and scored 0.82–0.93 against the 0.6 cutoff. They show that the gate rejects clearly irrelevant questions, but they don't test harder cases where a question uses campus vocabulary but isn't actually covered.
+
+**Criterion 5** is another target I'd tighten. Since each `campus_life` document covers one topic, criteria 1 and 5 are closely related. Once retrieval finds the correct document, the cited source will usually support the answer. I'd retest criterion 5 with the plausible near-miss documents from the distance results, such as `admin_withdrawal_deadline.txt` and `admin_pass_fail_option.txt`, to see whether the model can avoid citing a wrong but related source.
 
 ## The Improvement
 
