@@ -198,7 +198,6 @@ Claude also pointed out a limitation in my test set. My five out-of-scope questi
      the same number goes in all three run columns. That's correct, not lazy.
 
      Milestone 1. -->
-```
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
@@ -208,7 +207,6 @@ Claude also pointed out a limitation in my test set. My five out-of-scope questi
 | 4. Chunk Size | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 5. The cited source actually supports the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-```
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
@@ -359,11 +357,11 @@ For juniors and seniors, the housing lottery orders participants by accumulated 
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunks contain the answer | MET | All three runs were 5/5, which is above the target of 4/5 in every run. |
+| 2 | Every answer names a source | MET | All three runs were 5/5, which meets the target of 5/5 in every run. |
+| 3 | Gate stops out-of-corpus questions | MET | The relevance gate refused 5/5 out-of-corpus questions, exceeding the target of 4/5. |
+| 4 | Chunk Size | MET | All 5 sampled chunks were between 150 and 500 characters, exceeding the target of 4/5. |
+| 5 | The cited source actually supports the answer | MET | All 5 test questions had cited sources that contained the information used to answer them, exceeding the target of 4/5. |
 
 ## Diagnoses
 
